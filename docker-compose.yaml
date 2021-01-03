@@ -1,0 +1,50 @@
+version: "3.7"
+
+services:
+  nginx:
+    image: nginx
+    networks:
+      - interview-test
+    ports:
+      - ${APACHE_PORT:-80}:80
+    depends_on:
+      - php
+    volumes:
+      - ./:/app:rw
+      - .docker/nginx/localhost.conf:/etc/nginx/conf.d/default.conf:ro
+
+  php:
+    container_name: interview_test_php
+    image: local/interview-test/php7.4-dev:master
+    env_file:
+      - .env
+    networks:
+      - interview-test
+    user: 1000:1000
+    volumes:
+      - ~/.composer/cache/:/.composer_cache/:rw
+      - .:/app:rw
+    working_dir: /app
+
+  mysql:
+    container_name: interview_test_mysql
+    image: local/interview-test/mysql
+    networks:
+      - interview-test
+    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_general_ci --innodb-flush-log-at-trx-commit=0
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - mysql_logs:/var/log/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 'root'
+    ports:
+      - ${DB_PORT:-3306}:3306
+
+networks:
+  interview-test:
+    name: interview-test
+    driver: bridge
+
+volumes:
+  mysql_data:
+  mysql_logs:
